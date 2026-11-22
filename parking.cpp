@@ -1,18 +1,49 @@
 #include "parking.hpp"
 
 #include <cctype>
+#include <initializer_list>
 
-EntryResult ParkingGarage::enter(const std::string& licensePlate) {
+namespace {
+
+std::string normalizeLicensePlate(const std::string& licensePlate) {
     const char* whitespace = " \t\r\n\f\v";
     const auto firstCharacter = licensePlate.find_first_not_of(whitespace);
     if (firstCharacter == std::string::npos) {
-        return EntryResult::InvalidPlate;
+        return {};
     }
 
     const auto lastCharacter = licensePlate.find_last_not_of(whitespace);
     auto normalizedPlate = licensePlate.substr(firstCharacter, lastCharacter - firstCharacter + 1);
     for (char& character : normalizedPlate) {
         character = static_cast<char>(std::toupper(static_cast<unsigned char>(character)));
+    }
+    return normalizedPlate;
+}
+
+std::optional<int> parseTime(std::string_view time) {
+    if (time.size() != 5 || time[2] != ':') {
+        return std::nullopt;
+    }
+    for (const char digit : {time[0], time[1], time[3], time[4]}) {
+        if (digit < '0' || digit > '9') {
+            return std::nullopt;
+        }
+    }
+
+    const int hour = (time[0] - '0') * 10 + (time[1] - '0');
+    const int minute = (time[3] - '0') * 10 + (time[4] - '0');
+    if (hour > 23 || minute > 59) {
+        return std::nullopt;
+    }
+    return hour * 60 + minute;
+}
+
+}
+
+EntryResult ParkingGarage::enter(const std::string& licensePlate, std::string_view arrivalTime) {
+    const auto normalizedPlate = normalizeLicensePlate(licensePlate);
+    if (normalizedPlate.empty()) {
+        return EntryResult::InvalidPlate;
     }
 
     if (parkedVehicles.count(normalizedPlate) != 0) {
@@ -22,8 +53,21 @@ EntryResult ParkingGarage::enter(const std::string& licensePlate) {
         return EntryResult::GarageFull;
     }
 
-    parkedVehicles.insert(normalizedPlate);
+    const auto minutes = parseTime(arrivalTime);
+    if (!minutes) {
+        return EntryResult::InvalidArrivalTime;
+    }
+
+    parkedVehicles.emplace(normalizedPlate, *minutes);
     return EntryResult::Accepted;
+}
+
+std::optional<int> ParkingGarage::arrivalMinutes(const std::string& licensePlate) const {
+    const auto vehicle = parkedVehicles.find(normalizeLicensePlate(licensePlate));
+    if (vehicle == parkedVehicles.end()) {
+        return std::nullopt;
+    }
+    return vehicle->second;
 }
 
 std::size_t ParkingGarage::availableSpaces() const {
