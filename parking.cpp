@@ -62,6 +62,26 @@ EntryResult ParkingGarage::enter(const std::string& licensePlate, std::string_vi
     return EntryResult::Accepted;
 }
 
+ExitResult ParkingGarage::leave(const std::string& licensePlate, std::string_view departureTime) {
+    const auto vehicle = parkedVehicles.find(normalizeLicensePlate(licensePlate));
+    if (vehicle == parkedVehicles.end()) {
+        return {ExitStatus::VehicleNotFound};
+    }
+
+    const auto departureMinutes = parseTime(departureTime);
+    if (!departureMinutes) {
+        return {ExitStatus::InvalidDepartureTime};
+    }
+
+    const int parkedMinutes = *departureMinutes - vehicle->second;
+    if (parkedMinutes < 0) {
+        return {ExitStatus::DepartureBeforeArrival};
+    }
+
+    parkedVehicles.erase(vehicle);
+    return {ExitStatus::Completed, parkedMinutes};
+}
+
 std::optional<int> ParkingGarage::arrivalMinutes(const std::string& licensePlate) const {
     const auto vehicle = parkedVehicles.find(normalizeLicensePlate(licensePlate));
     if (vehicle == parkedVehicles.end()) {

@@ -42,5 +42,32 @@ int main() {
         return 1;
     }
 
+    if (garage.leave("CAR-10", "15:31").status != ExitStatus::VehicleNotFound ||
+        garage.availableSpaces() != 0) {
+        std::cerr << "An unknown vehicle should not free a space.\n";
+        return 1;
+    }
+    if (garage.leave("ABC-123", "15:60").status != ExitStatus::InvalidDepartureTime ||
+        garage.leave("ABC-123", "14:29").status != ExitStatus::DepartureBeforeArrival ||
+        garage.availableSpaces() != 0 || garage.arrivalMinutes("ABC-123") != 870) {
+        std::cerr << "An invalid departure should leave the parking record intact.\n";
+        return 1;
+    }
+    const auto departure = garage.leave(" abc-123 ", "15:31");
+    if (departure.status != ExitStatus::Completed || departure.parkedMinutes != 61 ||
+        garage.availableSpaces() != 1 || garage.arrivalMinutes("ABC-123")) {
+        std::cerr << "A successful departure should report 61 minutes and free one space.\n";
+        return 1;
+    }
+    if (garage.enter("ABC-123", "15:31") != EntryResult::Accepted) {
+        std::cerr << "A vehicle should be able to enter again after leaving.\n";
+        return 1;
+    }
+    const auto immediateDeparture = garage.leave("ABC-123", "15:31");
+    if (immediateDeparture.status != ExitStatus::Completed || immediateDeparture.parkedMinutes != 0) {
+        std::cerr << "Arrival and departure at the same minute should give a duration of zero.\n";
+        return 1;
+    }
+
     return 0;
 }

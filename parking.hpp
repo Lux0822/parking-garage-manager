@@ -14,9 +14,22 @@ enum class EntryResult {
     InvalidArrivalTime
 };
 
+enum class ExitStatus {
+    Completed,
+    VehicleNotFound,
+    InvalidDepartureTime,
+    DepartureBeforeArrival
+};
+
+struct ExitResult {
+    ExitStatus status;
+    int parkedMinutes = 0;
+};
+
 class ParkingGarage {
 public:
     EntryResult enter(const std::string& licensePlate, std::string_view arrivalTime);
+    ExitResult leave(const std::string& licensePlate, std::string_view departureTime);
     std::optional<int> arrivalMinutes(const std::string& licensePlate) const;
     std::size_t availableSpaces() const;
 
