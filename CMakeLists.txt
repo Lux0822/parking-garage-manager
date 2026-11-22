@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(parking_logic parking.cpp)
+add_library(parking_logic parking.cpp tariff.cpp)
 add_executable(parking-garage-manager main.cpp)
 target_link_libraries(parking-garage-manager PRIVATE parking_logic)
 
@@ -14,4 +14,8 @@ if(BUILD_TESTING)
     add_executable(parking_tests parking_tests.cpp)
     target_link_libraries(parking_tests PRIVATE parking_logic)
     add_test(NAME parking_operations COMMAND parking_tests)
+
+    add_executable(tariff_tests tariff_tests.cpp)
+    target_link_libraries(tariff_tests PRIVATE parking_logic)
+    add_test(NAME parking_tariffs COMMAND tariff_tests)
 endif()

@@ -1,4 +1,5 @@
 #include "parking.hpp"
+#include "tariff.hpp"
 
 #include <iostream>
 #include <string>
@@ -25,11 +26,35 @@ void registerEntry(ParkingGarage& garage, const std::string& licensePlate, const
     }
 }
 
+const ParkingTariff* selectTariff() {
+    static const StandardTariff standardTariff;
+    static const CappedTariff cappedTariff;
+
+    std::string choice;
+    while (std::cout << "Choose [1] Standard, [2] Capped, [Enter] Cancel exit: " &&
+           std::getline(std::cin, choice) && !choice.empty()) {
+        if (choice == "1") {
+            return &standardTariff;
+        }
+        if (choice == "2") {
+            return &cappedTariff;
+        }
+        std::cout << "Choose 1 or 2.\n";
+    }
+    return nullptr;
+}
+
 void registerExit(ParkingGarage& garage, const std::string& licensePlate, const std::string& time) {
+    const ParkingTariff* tariff = selectTariff();
+    if (tariff == nullptr) {
+        return;
+    }
+
     const auto result = garage.leave(licensePlate, time);
     switch (result.status) {
         case ExitStatus::Completed:
             std::cout << "Parking duration: " << result.parkedMinutes << " minutes.\n"
+                      << "Parking fee: " << tariff->feeInHuf(result.parkedMinutes) << " HUF.\n"
                       << "Available spaces: " << garage.availableSpaces() << '\n';
             break;
         case ExitStatus::VehicleNotFound:
