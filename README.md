@@ -18,3 +18,7 @@ Use CMake 3.16 or newer and a C++17 compiler.
 cmake -S . -B build
 cmake --build build
 ```
+
+## Test
+
+From the `build` directory, run `ctest -C Debug --output-on-failure` after building.
