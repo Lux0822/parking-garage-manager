@@ -5,7 +5,26 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(PARKING_ENABLE_SANITIZERS "Enable address and undefined behavior checks on Linux" OFF)
+
+add_library(parking_build_options INTERFACE)
+if(MSVC)
+    target_compile_options(parking_build_options INTERFACE /W4)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+    target_compile_options(parking_build_options INTERFACE -Wall -Wextra -Wpedantic)
+endif()
+
+if(PARKING_ENABLE_SANITIZERS)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+        message(FATAL_ERROR "Sanitizers require GCC or Clang on Linux.")
+    endif()
+    target_compile_options(parking_build_options INTERFACE
+        -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined)
+    target_link_options(parking_build_options INTERFACE -fsanitize=address,undefined)
+endif()
+
 add_library(parking_logic parking.cpp tariff.cpp)
+target_link_libraries(parking_logic PUBLIC parking_build_options)
 add_executable(parking-garage-manager main.cpp)
 target_link_libraries(parking-garage-manager PRIVATE parking_logic)
 
