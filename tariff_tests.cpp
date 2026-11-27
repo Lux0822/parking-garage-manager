@@ -4,7 +4,7 @@
 
 int main() {
     const StandardTariff standard;
-    const CappedTariff capped;
+    const CappedTariff capped(std::make_unique<StandardTariff>());
 
     if (standard.feeInHuf(0) != 0 || capped.feeInHuf(0) != 0) {
         std::cerr << "Both tariffs should charge zero for zero minutes.\n";
@@ -19,6 +19,12 @@ int main() {
         capped.feeInHuf(180) != 1200 || capped.feeInHuf(181) != 1200 ||
         capped.feeInHuf(240) != 1200) {
         std::cerr << "The capped tariff should apply the standard rate up to 1,200 HUF.\n";
+        return 1;
+    }
+    const auto grace = makeTariff("grace");
+    if (!grace || grace->feeInHuf(15) != 0 || grace->feeInHuf(16) != 400 ||
+        grace->feeInHuf(75) != 400 || grace->feeInHuf(76) != 800) {
+        std::cerr << "The first 15 minutes should be free and the remaining minutes billed by the started hour.\n";
         return 1;
     }
 }

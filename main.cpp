@@ -3,6 +3,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <string>
 
 namespace {
@@ -27,20 +28,20 @@ void registerEntry(ParkingGarage& garage, const std::string& licensePlate, const
     }
 }
 
-const ParkingTariff* selectTariff() {
-    static const StandardTariff standardTariff;
-    static const CappedTariff cappedTariff;
-
+std::unique_ptr<ParkingTariff> selectTariff() {
     std::string choice;
-    while (std::cout << "Choose [1] Standard, [2] Capped, [Enter] Cancel exit: " &&
+    while (std::cout << "Choose [1] Standard, [2] Capped, [3] First 15 minutes free, [Enter] Cancel exit: " &&
            std::getline(std::cin, choice) && !choice.empty()) {
         if (choice == "1") {
-            return &standardTariff;
+            return makeTariff("standard");
         }
         if (choice == "2") {
-            return &cappedTariff;
+            return makeTariff("capped");
         }
-        std::cout << "Choose 1 or 2.\n";
+        if (choice == "3") {
+            return makeTariff("grace");
+        }
+        std::cout << "Choose 1, 2, or 3.\n";
     }
     return nullptr;
 }
@@ -61,7 +62,7 @@ void registerExit(ParkingGarage& garage, const std::string& licensePlate, const 
             return;
     }
 
-    const auto* tariff = selectTariff();
+    const auto tariff = selectTariff();
     if (!tariff) {
         return;
     }
