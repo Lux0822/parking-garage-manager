@@ -1,24 +1,53 @@
 #include "tariff.hpp"
 
-#include <iostream>
+#include <catch2/catch_test_macros.hpp>
 
-int main() {
-    const StandardTariff standard;
-    const CappedTariff capped;
+#include <memory>
 
-    if (standard.feeInHuf(0) != 0 || capped.feeInHuf(0) != 0) {
-        std::cerr << "Both tariffs should charge zero for zero minutes.\n";
-        return 1;
-    }
-    if (standard.feeInHuf(1) != 400 || standard.feeInHuf(60) != 400 ||
-        standard.feeInHuf(61) != 800 || standard.feeInHuf(240) != 1600) {
-        std::cerr << "The standard tariff should charge 400 HUF per started hour.\n";
-        return 1;
-    }
-    if (capped.feeInHuf(60) != 400 || capped.feeInHuf(61) != 800 ||
-        capped.feeInHuf(180) != 1200 || capped.feeInHuf(181) != 1200 ||
-        capped.feeInHuf(240) != 1200) {
-        std::cerr << "The capped tariff should apply the standard rate up to 1,200 HUF.\n";
-        return 1;
-    }
+TEST_CASE("The standard tariff charges for each started hour", "[tariff]") {
+    const StandardTariff tariff;
+    CHECK(tariff.feeInHuf(0) == 0);
+    CHECK(tariff.feeInHuf(1) == 400);
+    CHECK(tariff.feeInHuf(60) == 400);
+    CHECK(tariff.feeInHuf(61) == 800);
+    CHECK(tariff.feeInHuf(240) == 1600);
+}
+
+TEST_CASE("The capped tariff limits the fee to 1200 HUF", "[tariff]") {
+    const CappedTariff tariff(std::make_unique<StandardTariff>());
+    CHECK(tariff.feeInHuf(0) == 0);
+    CHECK(tariff.feeInHuf(60) == 400);
+    CHECK(tariff.feeInHuf(61) == 800);
+    CHECK(tariff.feeInHuf(180) == 1200);
+    CHECK(tariff.feeInHuf(181) == 1200);
+    CHECK(tariff.feeInHuf(240) == 1200);
+}
+
+TEST_CASE("The grace period is deducted before rounding up billable hours", "[tariff]") {
+    const GracePeriodTariff tariff(std::make_unique<StandardTariff>());
+    CHECK(tariff.feeInHuf(0) == 0);
+    CHECK(tariff.feeInHuf(15) == 0);
+    CHECK(tariff.feeInHuf(16) == 400);
+    CHECK(tariff.feeInHuf(75) == 400);
+    CHECK(tariff.feeInHuf(76) == 800);
+}
+
+TEST_CASE("The capped tariff can wrap a grace-period tariff", "[tariff]") {
+    const CappedTariff tariff(std::make_unique<GracePeriodTariff>(std::make_unique<StandardTariff>()));
+    CHECK(tariff.feeInHuf(15) == 0);
+    CHECK(tariff.feeInHuf(75) == 400);
+    CHECK(tariff.feeInHuf(240) == 1200);
+}
+
+TEST_CASE("The tariff factory selects a strategy by name", "[tariff]") {
+    const auto standard = makeTariff("standard");
+    const auto capped = makeTariff("capped");
+    const auto grace = makeTariff("grace");
+    REQUIRE(standard);
+    REQUIRE(capped);
+    REQUIRE(grace);
+    CHECK(standard->feeInHuf(240) == 1600);
+    CHECK(capped->feeInHuf(240) == 1200);
+    CHECK(grace->feeInHuf(15) == 0);
+    CHECK_FALSE(makeTariff("unknown"));
 }

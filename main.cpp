@@ -3,6 +3,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <string>
 
 namespace {
@@ -27,47 +28,50 @@ void registerEntry(ParkingGarage& garage, const std::string& licensePlate, const
     }
 }
 
-const ParkingTariff* selectTariff() {
-    static const StandardTariff standardTariff;
-    static const CappedTariff cappedTariff;
-
+std::unique_ptr<ParkingTariff> selectTariff() {
     std::string choice;
-    while (std::cout << "Choose [1] Standard, [2] Capped, [Enter] Cancel exit: " &&
+    while (std::cout << "Choose [1] Standard, [2] Capped, [3] First 15 minutes free, [Enter] Cancel exit: " &&
            std::getline(std::cin, choice) && !choice.empty()) {
         if (choice == "1") {
-            return &standardTariff;
+            return makeTariff("standard");
         }
         if (choice == "2") {
-            return &cappedTariff;
+            return makeTariff("capped");
         }
-        std::cout << "Choose 1 or 2.\n";
+        if (choice == "3") {
+            return makeTariff("grace");
+        }
+        std::cout << "Choose 1, 2, or 3.\n";
     }
     return nullptr;
 }
 
 void registerExit(ParkingGarage& garage, const std::string& licensePlate, const std::string& time) {
-    const ParkingTariff* tariff = selectTariff();
-    if (tariff == nullptr) {
-        return;
-    }
-
-    const auto result = garage.leave(licensePlate, time);
-    switch (result.status) {
+    const auto preview = garage.previewExit(licensePlate, time);
+    switch (preview.status) {
         case ExitStatus::Completed:
-            std::cout << "Parking duration: " << result.parkedMinutes << " minutes.\n"
-                      << "Parking fee: " << tariff->feeInHuf(result.parkedMinutes) << " HUF.\n"
-                      << "Available spaces: " << garage.availableSpaces() << '\n';
             break;
         case ExitStatus::VehicleNotFound:
             std::cout << "This vehicle is not parked.\n";
-            break;
+            return;
         case ExitStatus::InvalidDepartureTime:
             std::cout << "Enter a valid departure time between 00:00 and 23:59.\n";
-            break;
+            return;
         case ExitStatus::DepartureBeforeArrival:
             std::cout << "Departure must be at or after arrival on the same day.\n";
-            break;
+            return;
     }
+
+    const auto tariff = selectTariff();
+    if (!tariff) {
+        return;
+    }
+
+    const int fee = tariff->feeInHuf(preview.parkedMinutes);
+    garage.leave(licensePlate, time);
+    std::cout << "Parking duration: " << preview.parkedMinutes << " minutes.\n"
+              << "Parking fee: " << fee << " HUF.\n"
+              << "Available spaces: " << garage.availableSpaces() << '\n';
 }
 
 void showStatus(const ParkingGarage& garage) {
