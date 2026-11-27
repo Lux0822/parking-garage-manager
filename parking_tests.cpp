@@ -65,6 +65,12 @@ int main() {
         std::cerr << "An invalid departure should leave the parking record intact.\n";
         return 1;
     }
+    const auto preview = garage.previewExit(" abc-123 ", "15:31");
+    if (preview.status != ExitStatus::Completed || preview.parkedMinutes != 61 ||
+        garage.availableSpaces() != 0 || garage.arrivalMinutes("ABC-123") != 870) {
+        std::cerr << "Previewing a departure should preserve the parking record.\n";
+        return 1;
+    }
     const auto departure = garage.leave(" abc-123 ", "15:31");
     if (departure.status != ExitStatus::Completed || departure.parkedMinutes != 61 ||
         garage.availableSpaces() != 1 || garage.arrivalMinutes("ABC-123")) {
