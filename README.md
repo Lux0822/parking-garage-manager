@@ -15,9 +15,9 @@ A C++ command-line application for tracking vehicle entry, exit, and parking fee
 
 Both tariffs use the same `ParkingTariff` interface, so the exit flow can apply the selected strategy without duplicating fee rules.
 
-## Planned features
+## Garage status
 
-- The status view lists parked vehicles and shows how many spaces are available.
+Choose `3` to see the available spaces and the parked vehicles. The list shows each license plate and arrival time in license plate order.
 
 ## Build
 

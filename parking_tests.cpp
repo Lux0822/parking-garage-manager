@@ -8,6 +8,10 @@
 int main() {
     ParkingGarage garage;
 
+    if (!garage.listParkedVehicles().empty() || garage.availableSpaces() != 10) {
+        std::cerr << "An empty garage should list no vehicles and have ten available spaces.\n";
+        return 1;
+    }
     if (garage.enter("ABC-123", "14:30") != EntryResult::Accepted || garage.availableSpaces() != 9) {
         std::cerr << "The first vehicle should be admitted and leave nine spaces.\n";
         return 1;
@@ -42,6 +46,14 @@ int main() {
         return 1;
     }
 
+    const auto parkedVehicles = garage.listParkedVehicles();
+    if (parkedVehicles.size() != 10 || parkedVehicles[0].licensePlate != "ABC-123" ||
+        parkedVehicles[0].arrivalMinutes != 870 || parkedVehicles[1].licensePlate != "CAR-1" ||
+        parkedVehicles[1].arrivalMinutes != 0) {
+        std::cerr << "The status list should include parked plates in order with their arrival times.\n";
+        return 1;
+    }
+
     if (garage.leave("CAR-10", "15:31").status != ExitStatus::VehicleNotFound ||
         garage.availableSpaces() != 0) {
         std::cerr << "An unknown vehicle should not free a space.\n";
@@ -57,6 +69,11 @@ int main() {
     if (departure.status != ExitStatus::Completed || departure.parkedMinutes != 61 ||
         garage.availableSpaces() != 1 || garage.arrivalMinutes("ABC-123")) {
         std::cerr << "A successful departure should report 61 minutes and free one space.\n";
+        return 1;
+    }
+    const auto remainingVehicles = garage.listParkedVehicles();
+    if (remainingVehicles.size() != 9 || remainingVehicles.front().licensePlate != "CAR-1") {
+        std::cerr << "A vehicle should disappear from the status list after leaving.\n";
         return 1;
     }
     if (garage.enter("ABC-123", "15:31") != EntryResult::Accepted) {

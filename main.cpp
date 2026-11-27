@@ -1,6 +1,7 @@
 #include "parking.hpp"
 #include "tariff.hpp"
 
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -69,6 +70,24 @@ void registerExit(ParkingGarage& garage, const std::string& licensePlate, const 
     }
 }
 
+void showStatus(const ParkingGarage& garage) {
+    std::cout << "Available spaces: " << garage.availableSpaces() << '\n';
+    const auto vehicles = garage.listParkedVehicles();
+    if (vehicles.empty()) {
+        std::cout << "No vehicles parked.\n";
+        return;
+    }
+
+    std::cout << "Parked vehicles (license plate, arrival time):\n";
+    const char previousFill = std::cout.fill('0');
+    for (const auto& vehicle : vehicles) {
+        std::cout << vehicle.licensePlate << "  "
+                  << std::setw(2) << vehicle.arrivalMinutes / 60 << ':'
+                  << std::setw(2) << vehicle.arrivalMinutes % 60 << '\n';
+    }
+    std::cout.fill(previousFill);
+}
+
 }
 
 int main() {
@@ -76,10 +95,14 @@ int main() {
     std::cout << "Parking Garage Manager\n";
 
     std::string choice;
-    while (std::cout << "Choose [1] Entry, [2] Exit, [Enter] Quit: " &&
+    while (std::cout << "Choose [1] Entry, [2] Exit, [3] Status, [Enter] Quit: " &&
            std::getline(std::cin, choice) && !choice.empty()) {
+        if (choice == "3") {
+            showStatus(garage);
+            continue;
+        }
         if (choice != "1" && choice != "2") {
-            std::cout << "Choose 1 or 2.\n";
+            std::cout << "Choose 1, 2, or 3.\n";
             continue;
         }
 

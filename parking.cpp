@@ -1,5 +1,6 @@
 #include "parking.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <initializer_list>
 
@@ -88,6 +89,18 @@ std::optional<int> ParkingGarage::arrivalMinutes(const std::string& licensePlate
         return std::nullopt;
     }
     return vehicle->second;
+}
+
+std::vector<ParkedVehicle> ParkingGarage::listParkedVehicles() const {
+    std::vector<ParkedVehicle> vehicles;
+    vehicles.reserve(parkedVehicles.size());
+    for (const auto& [plate, minutes] : parkedVehicles) {
+        vehicles.push_back({plate, minutes});
+    }
+    std::sort(vehicles.begin(), vehicles.end(), [](const ParkedVehicle& left, const ParkedVehicle& right) {
+        return left.licensePlate < right.licensePlate;
+    });
+    return vehicles;
 }
 
 std::size_t ParkingGarage::availableSpaces() const {
